@@ -1,0 +1,56 @@
+name: Firebase Deploy
+
+on:
+  push:
+    branches:
+      - dev  # or your desired branch
+  # pull_request:
+  #   branches:
+  #     - dev
+  #   types:
+  #     - closed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18'  # or any other version you are using
+
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Setup Python 3.12
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.12'
+
+    - name: Install Python Dependencies
+      run: |
+        rm -rf functions/venv
+        python3.12 -m venv functions/venv
+        . functions/venv/bin/activate
+        python3.12 -m pip install -r functions/requirements.txt
+        echo "COMPLETED PIP installation"
+
+    - name: Deploy to Firebase
+      env:
+        FIREBASE_TOKEN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+      run: |
+        firebase --version
+        echo "Firebase Version is found"
+        . functions/venv/bin/activate
+        pip install firebase_functions
+        pip install firebase_admin
+        # Deploy functions with --only option to specify functions you want to deploy
+        firebase deploy --only functions:httpsflaskexample --token "$FIREBASE_TOKEN" --project ${{ secrets.FIREBASE_PROJECT_ID }} --message "Automated deployment" 
+
+    - name: Completion
+      run: |
+        echo "Deployment Completed"
