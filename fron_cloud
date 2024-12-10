@@ -1,0 +1,59 @@
+name: Deploy to Google Cloud Storage
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          npm install -g @angular/cli
+          npm install --legacy-peer-deps
+          echo "NPM installation completed"
+      # Step 4: Build the Angular app
+      - name: Build the Angular app
+        run: |
+          npm run build
+          echo "Files Building completed!!!"
+          
+      # Step 5: Authenticate with Google Cloud
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GCP_KEY }}'
+
+      # Step 6: Set up Google Cloud SDK
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: wacoa-4b37f
+
+      # Step 7: Clear bucket contents
+      - name: Clear bucket contents
+        run: gsutil -m rm -r -f gs://wacoa-search-system/**
+
+      # Step 8: Upload files to Google Cloud Storage
+      - name: Upload files to Google Cloud Storage
+        run: gsutil -m cp -r dist/wacoa/browser/* gs://wacoa-search-system/
+
+      - name: Deployment Completed
+        run: echo "Deployment to the GOOGLE CLOUD BUCKET STORAGE Completed"
